@@ -162,7 +162,7 @@ int main() {
 	Eigen::Matrix4d trans2 = Eigen::Matrix4d::Identity();
 	trans2.block<3, 1>(0, 3) = translationV; // 最後再變回去
 	Eigen::Matrix4d rotM = Eigen::Matrix4d::Identity();
-	double theta1 = angle_to_rad(10);
+	double theta1 = angle_to_rad(15);
 	rotM(0, 0) = std::cos(theta1);
 	rotM(0, 2) = std::sin(theta1);
 	rotM(2, 0) = -std::sin(theta1);
