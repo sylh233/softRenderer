@@ -1,0 +1,233 @@
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <fundm.h>
+#include <vector>
+
+extern const int Wwidth;
+extern const int Wheight;
+extern const double PI;
+extern Eigen::Matrix4d viewMat;
+extern fundm::Orth orth;
+extern fundm::Perspective pers;
+extern Eigen::Matrix4d TransMat;
+extern std::vector<Uint32> frameBuffer;
+
+namespace fundm {
+
+void set_px(int x, int y, Uint32 color) {
+	if (x >= 0 && x < Wwidth && y >= 0 && y < Wheight) {
+		frameBuffer[(Wheight - 1 - y) * Wwidth + x] = color;
+	}
+}
+
+void fundm::Orth::orthSet(int n0, int f0, double w0, double h0) {
+	n = n0;
+	f = f0;
+	w = w0;
+	h = h0;
+	orthMat << (double)Wwidth / w, 0, 0, 0, 0, (double)Wheight / h, 0, 0, 0, 0,
+	    1, 0, 0, 0, 0, 1;
+	Eigen::Matrix4d zTranslation;
+	Eigen::Matrix4d zScale;
+	zTranslation << 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -(n + f) / 2.0, 0, 0, 0, 1;
+	zScale << 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2.0 / std::abs(f - n), 0, 0, 0, 0,
+	    1;
+	Eigen::Matrix4d xyTranslation = Eigen::Matrix4d::Identity();
+	xyTranslation(0, 3) = Wwidth / 2.0;
+	xyTranslation(1, 3) = Wheight / 2.0;
+	orthMat = xyTranslation * zScale * zTranslation * orthMat;
+}
+
+template <typename eleR> eleR fundm::Orth::orthProj(eleR E) {
+	eleR t = E;
+	for (size_t i = 0; i < t.p.size(); i++) {
+		t.p[i] = orthMat * t.p[i];
+		t.p[i] /= t.p[i][3];
+	}
+	return t;
+}
+template fundm::Line fundm::Orth::orthProj<fundm::Line>(fundm::Line);
+
+void fundm::Perspective::setFrustum(double n, double f, double fov,
+                                    double kw_h) {
+	frustum.n = n;
+	frustum.f = f;
+	frustum.fov = fov;
+	frustum.kw_h = kw_h;
+	h = 2 * std::tan(fov / 2) * std::abs(n), w = h * kw_h;
+	persMat << n, 0, 0, 0, 0, n, 0, 0, 0, 0, n + f, -n * f, 0, 0, 1, 0;
+}
+
+template <typename eleR> eleR fundm::Perspective::persProj(eleR E) {
+	eleR t = E;
+	for (size_t i = 0; i < t.p.size(); i++) {
+		t.p[i] = persMat * t.p[i];
+		t.p[i] /= t.p[i][3];
+	}
+	return t;
+}
+template fundm::Line fundm::Perspective::persProj<fundm::Line>(Line);
+
+void draw_triangle(fundm::Triangle T, SDL_Rect rect) {
+	Eigen::Vector4d A = T.p[0], B = T.p[1], C = T.p[2];
+	Uint32 c = T.color;
+	fundm::Line AB = {{A, B}, c}, BC = {{B, C}, c}, CA = {{C, A}, c};
+	draw_line(AB, rect);
+	draw_line(BC, rect);
+	draw_line(CA, rect);
+}
+
+// Bresenham算法
+void draw_line(Eigen::Vector2d A, Eigen::Vector2d B, Uint32 color,
+               SDL_Rect rect) {
+	if (fundm::lineClip(A, B, rect)) {
+		int x_A = A[0];
+		int y_A = A[1];
+		int x_B = B[0];
+		int y_B = B[1];
+		int dx = std::abs(x_B - x_A);
+		int dy = std::abs(y_B - y_A);
+		int sx = (x_A < x_B) ? 1 : -1;
+		int sy = (y_A < y_B) ? 1 : -1;
+
+		int e1 = dx - dy;
+		int e2;
+		while (x_A != x_B || y_A != y_B) {
+			set_px(x_A, y_A, color);
+			e2 = 2 * e1;
+			if (e2 > -dy) {
+				e1 -= dy;
+				x_A += sx;
+			}
+			if (e2 < dx) {
+				e1 += dx;
+				y_A += sy;
+			}
+		}
+	}
+}
+
+void draw_line(fundm::Line line, SDL_Rect rect) {
+	Eigen::Vector2d A = line.p[0].head<2>();
+	Eigen::Vector2d B = line.p[1].head<2>();
+	Uint32 color = line.color;
+	draw_line(A, B, color, rect);
+}
+
+Uint8 getOutcode(Eigen::Vector2d A, SDL_Rect rect) {
+	int x = A[0];
+	int y = A[1];
+	int l = rect.x, r = rect.x + rect.w, t = rect.y, b = rect.y + rect.h;
+	Uint8 outcode = 0b0000;
+	if (x < l) {
+		outcode = outcode | 0b0001;
+	} else if (x >= r) {
+		outcode = outcode | 0b0010;
+	}
+
+	if (y < t) {
+		outcode = outcode | 0b1000;
+	} else if (y >= b) {
+		outcode = outcode | 0b0100;
+	}
+	return outcode;
+}
+
+// Cohen-Sutherland算法
+bool lineClip(Eigen::Vector2d &A, Eigen::Vector2d &B, SDL_Rect rect) {
+	int x_A = A[0], y_A = A[1], x_B = B[0], y_B = B[1];
+	Uint8 A_outcode = getOutcode(A, rect), B_outcode = getOutcode(B, rect);
+	if (!(A_outcode | B_outcode))
+		return true;
+	if (A_outcode & B_outcode)
+		return false;
+
+	if (A_outcode & 0b1000) {
+		if (y_A != y_B)
+			x_A = x_A + (x_B - x_A) * (rect.y - y_A) / (y_B - y_A);
+		y_A = rect.y;
+	}
+	if (A_outcode & 0b0100) {
+		if (y_A != y_B)
+			x_A = x_A + (x_B - x_A) * (rect.y + rect.h - y_A) / (y_B - y_A);
+		y_A = rect.y + rect.h;
+	}
+	if (A_outcode & 0b0001) {
+		if (x_A != x_B)
+			y_A += (y_B - y_A) * (rect.x - x_A) / (x_B - x_A);
+		x_A = rect.x;
+	}
+	if (A_outcode & 0b0010) {
+		if (x_A != x_B)
+			y_A += (y_B - y_A) * (rect.x + rect.w - x_A) / (x_B - x_A);
+		x_A = rect.x + rect.w;
+	}
+
+	if (B_outcode & 0b1000) {
+		if (y_B != y_A)
+			x_B = x_B + (x_A - x_B) * (rect.y - y_B) / (y_A - y_B);
+		y_B = rect.y;
+	}
+	if (B_outcode & 0b0100) {
+		if (y_B != y_A)
+			x_B = x_B + (x_A - x_B) * (rect.y + rect.h - y_B) / (y_A - y_B);
+		y_B = rect.y + rect.h;
+	}
+	if (B_outcode & 0b0001) {
+		if (x_B != x_A)
+			y_B += (y_A - y_B) * (rect.x - x_B) / (x_A - x_B);
+		x_B = rect.x;
+	}
+	if (B_outcode & 0b0010) {
+		if (x_B != x_A)
+			y_B += (y_A - y_B) * (rect.x + rect.w - x_B) / (x_A - x_B);
+		x_B = rect.x + rect.w;
+	}
+
+	A[0] = x_A;
+	A[1] = y_A;
+	B[0] = x_B;
+	B[1] = y_B;
+	return 1;
+}
+
+template <typename eleR> eleR viewTrans(eleR E) {
+	eleR t = E;
+	for (size_t i = 0; i < t.p.size(); i++) {
+		t.p[i] = viewMat * t.p[i];
+		t.p[i] /= t.p[i][3];
+	}
+	return t;
+}
+
+template fundm::Line viewTrans<fundm::Line>(fundm::Line);
+
+// 罗德里格斯旋转公式
+Eigen::Vector4d vecRotate(Eigen::Vector4d v, Eigen::Vector4d k, double theta) {
+	Eigen::Vector3d v3 = v.head<3>(), k3 = k.head<3>();
+	double cost = std::cos(theta), sint = std::sin(theta);
+	double kdotv = k3.dot(v3);
+	Eigen::Vector3d kcrossv = k3.cross(v3);
+	Eigen::Vector3d r3 = v3 * cost + kcrossv * sint + k3 * kdotv * (1.0 - cost);
+	Eigen::Vector4d r(0, 0, 0, v[3]);
+	r.block<3, 1>(0, 0) = r3;
+	return r;
+}
+
+void updateTransMat() { TransMat = get_TransMat(); }
+
+fundm::Triangle transTriangle(fundm::Triangle tri) {
+	fundm::Triangle t = tri;
+	Eigen::Matrix4d Mat = get_TransMat();
+	for (size_t i = 0; i < t.p.size(); i++) {
+		t.p[i] = Mat * t.p[i];
+		t.p[i] /= t.p[i][3];
+	}
+	return t;
+}
+
+Eigen::Matrix4d get_TransMat() {
+	return orth.get_orthMat() * pers.get_persMat() * viewMat;
+}
+
+} // namespace fundm

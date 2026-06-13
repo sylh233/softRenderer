@@ -1,0 +1,100 @@
+#ifndef FUNDM
+#define FUNDM
+
+#include <Eigen/Core>
+#include <SDL3/SDL.h>
+
+extern const int Wwidth;
+extern const int Wheight;
+extern const double PI;
+extern Eigen::Matrix4d viewMat;
+extern Eigen::Matrix4d TransMat;
+
+inline double angle_to_rad(double angle) { return angle / 180 * PI; }
+
+namespace fundm {
+
+void set_px(int x, int y, Uint32 color);
+	
+struct Camera {
+	Eigen::Vector4d pos;
+	Eigen::Vector4d upwards;
+	Eigen::Vector4d lookat;
+	Eigen::Vector4d right;
+};
+typedef struct Camera Camera;
+
+struct Point {
+	std::array<Eigen::Vector4d, 1> p;
+	Uint32 color;
+};
+typedef struct Point Point;
+
+struct Line {
+	std::array<Eigen::Vector4d, 2> p;
+	Uint32 color;
+};
+typedef struct Line Line;
+
+struct Triangle {
+	std::array<Eigen::Vector4d, 3> p;
+	Uint32 color;
+};
+typedef struct Triangle Triangle;
+
+class Orth {
+  private:
+	int n, f;
+	double w, h;
+	Eigen::Matrix4d orthMat;
+
+  public:
+	void orthSet(int, int, double, double);
+	template <typename eleR> eleR orthProj(eleR);
+	Eigen::Matrix4d get_orthMat() { return orthMat; }
+};
+
+class Perspective {
+  private:
+	struct Frustum {
+		double n, f;
+		double kw_h, fov;
+	} frustum;
+	Eigen::Matrix4d persMat;
+	double w, h;
+
+  public:
+	void setFrustum(double, double, double, double);
+	template <typename eleR> eleR persProj(eleR);
+	int get_n() { return frustum.n; }
+	int get_f() { return frustum.f; }
+	double get_w() { return w; }
+	double get_h() { return h; }
+	Eigen::Matrix4d get_persMat() { return persMat; }
+};
+
+void draw_line(Eigen::Vector2d, Eigen::Vector2d, Uint32,
+               SDL_Rect rect = SDL_Rect({0, 0, Wwidth, Wheight}));
+void draw_line(fundm::Line, SDL_Rect rect = SDL_Rect({0, 0, Wwidth, Wheight}));
+Uint8 getOutcode(Eigen::Vector2d, SDL_Rect);
+bool lineClip(Eigen::Vector2d &, Eigen::Vector2d &, SDL_Rect);
+Eigen::Vector4d vecRotate(Eigen::Vector4d, Eigen::Vector4d, double);
+void draw_triangle(fundm::Triangle,
+                   SDL_Rect rect = SDL_Rect({0, 0, Wwidth, Wheight}));
+
+template <typename eleR> eleR viewTrans(eleR);
+
+Eigen::Vector4d vecRotate(Eigen::Vector4d v, Eigen::Vector4d k, double theta);
+
+Eigen::Matrix4d get_TransMat();
+
+void updateTransMat();
+
+fundm::Triangle transTriangle(fundm::Triangle tri);
+
+} // namespace fundm
+
+extern fundm::Orth orth;
+extern fundm::Perspective pers;
+
+#endif

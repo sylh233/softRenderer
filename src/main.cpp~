@@ -1,0 +1,338 @@
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <SDL3/SDL.h>
+#include <array>
+#include <cmath>
+#include <cstring>
+#include <ctime>
+#include <iostream>
+#include <vector>
+
+#include <fundm.h>
+#include <renderDataStruct.h>
+#include <renderFunction.h>
+
+const int Wwidth = 800;
+const int Wheight = 600;
+const double PI = std::atan(1) * 4;
+const double camSpeed = 0.2;
+
+fundm::Camera camera;
+
+int init();
+void draw();
+void show();
+void Event();
+void quit();
+
+void Clear();
+
+SDL_Window *win = NULL;
+SDL_Event event;
+
+SDL_Surface *surf;
+std::vector<Uint32> frameBuffer(Wwidth *Wheight);
+std::vector<double> zBuffer(Wwidth *Wheight);
+
+std::vector<Eigen::Vector4d> pointSet;
+std::vector<fundm::Line> lineSet;
+std::vector<fundm::Triangle> triSet;
+
+Eigen::Matrix4d viewMat;
+
+void viewTUpdate();
+
+fundm::Orth orth;
+
+fundm::Perspective pers;
+
+// using namespace Eigen;
+/*Matrix4d m;
+Matrix4d mz;
+Vector4d a(10, 10, 0, 1), b(610, 10, 0, 1), c(310, 500, 0, 1);
+float theta = 0.05;
+Matrix4d t;
+Matrix4d ti;*/
+
+// 总变换矩阵
+Eigen::Matrix4d TransMat;
+
+// 几何体模型
+render_func::geometryR g1;
+render_data::triR tr1, tr2;
+render_func::textureSet tx1;
+const double boxspeed = 0.2;
+render_func::boxR b1(1, Eigen::Vector4d(0, 0, 0, 1));
+render_data::Light li1, li2, li3;
+//
+Eigen::Matrix4d rotateMat;
+//
+int main() {
+	if (init() < 0)
+		return -1;
+
+	using namespace Eigen;
+	/*m << 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1;
+	m(2, 2) = std::cos(theta);
+	    m(2, 0) = -std::sin(theta);
+	    m(0, 2) = std::sin(theta);
+	    m(0, 0) = std::cos(theta);
+	t << 1,0,0,-310,
+	    0,1,0,-(10+500)/(1+std::sqrt(3))-10,
+	    0,0,1,0,
+	    0,0,0,1;
+	ti = t.inverse();
+	mz << std::cos(theta),-std::sin(theta),0,0,
+	    std::sin(theta),std::cos(theta),0,0,
+	    0,0,1,0,
+	    0,0,0,1;*/
+	fundm::Line l1 = {{Vector4d(100, 200, 100, 1), Vector4d(100, 100, 600, 1)},
+	                  0x00ff00};
+	lineSet.push_back(l1);
+	fundm::Line l2 = {{Vector4d(300, 200, 100, 1), Vector4d(100, 100, 600, 1)},
+	                  0x00ff00};
+	lineSet.push_back(l2);
+	fundm::Line l3 = {{Vector4d(100, 200, 100, 1), Vector4d(300, 200, 100, 1)},
+	                  0x00ff00};
+	lineSet.push_back(l3);
+
+	fundm::Triangle t1 = {{Vector4d(100, -200, 100, 1),
+	                       Vector4d(100, 100, 600, 1),
+	                       Vector4d(300, -200, 100, 1)},
+	                      0xff0000};
+	triSet.push_back(t1);
+
+	fundm::Line l4 = {{Vector4d(200, -500, 50, 1), Vector4d(200, 500, 50, 1)},
+	                  0x0000ff};
+	fundm::Line l5 = {{Vector4d(200, -500, 300, 1), Vector4d(200, 500, 300, 1)},
+	                  0xffa500};
+	lineSet.push_back(l4);
+	lineSet.push_back(l5);
+
+	// 几何体生成
+	tr1.points = {Vector4d(-5, -1, 6, 1), Vector4d(6, -1, 6, 1),
+	              Vector4d(-1, -1, -10, 1)};
+	tr1.colors = {0xff0000, 0x00ff00, 0x0000ff};
+	tx1.appendTex("home/textures/sky.bmp", "sky");
+	// tr1.texture = tx1.get_textures("sky");
+	tr1.uvMap = {Vector2d(0, 0), Vector2d(255, 0), Vector2d(255, 127)};
+	tr1.k_a = {0.1, 0.1, 0.1};
+	tr1.k_d = {1, 1, 1};
+	tr1.k_s = {2, 2, 2};
+
+	tr2.points = {Vector4d(400, 0, 0, 1), Vector4d(0, 600, 0, 1),
+	              Vector4d(-400, 0, 0, 1)};
+	tx1.appendTex("home/textures/playground.bmp", "pg");
+	tr2.uvMap = {Vector2d(0, 0), Vector2d(255, 0), Vector2d(255, 128)};
+	tr2.texture = tx1.get_textures("pg");
+	g1.appendTri(tr1);
+
+	// g1.appendTri(tr2);
+
+	li1.position = Vector4d(3, 3, 3, 1);
+	li1.value = 120;
+	li1.color = 0xff0000;
+	li2.position = Vector4d(-3, -2, 2, 1);
+	li2.value = 80;
+	li2.color = 0x00ff00;
+	li3.position = Vector4d(0, 4, 0, 1);
+	li3.value = 200;
+	li3.color = 0x0000ff;
+	b1.preNormal();
+	// b1.addLight(li1);
+	// b1.addLight(li2);
+	b1.addLight(li3);
+	b1.setColor(1, 0x00ff00);
+	b1.setShading(render_func::geometryR::shading_mode::GOURAUD_SHADING);
+	g1.appendLight(li3);
+	g1.setShadingM(render_func::geometryR::shading_mode::PHONG_SHADING);
+
+	// 旋转矩阵构造
+	rotateMat = Eigen::Matrix4d::Identity();
+	Eigen::Vector3d translationV =
+	    (tr1.points[0] + tr1.points[1] + tr1.points[2]).head<3>() / 3;
+	rotateMat.block<3, 1>(0, 3) = -translationV;
+	Eigen::Matrix4d tlMOrig = Eigen::Matrix4d::Identity();
+	tlMOrig.block<3, 1>(0, 3) = translationV;
+	Eigen::Matrix4d rotM = Eigen::Matrix4d::Identity();
+	double theta1 = angle_to_rad(10);
+	rotM(0, 0) = std::cos(theta1);
+	rotM(0, 2) = std::sin(theta1);
+	rotM(2, 0) = -std::sin(theta1);
+	rotM(2, 2) = std::cos(theta1);
+	rotateMat = tlMOrig * rotM * rotateMat;
+
+	g1.preloadNormal();
+
+	Event();
+	/*	Eigen::Vector4d testA(200, 100, 400, 1);
+	testA = TransMat * testA;
+	testA /= testA[3];
+	std::cout << testA;
+	*/
+	quit();
+	return 0;
+}
+
+int init() {
+	if (!SDL_Init(SDL_INIT_VIDEO)) {
+		SDL_Log("%s", SDL_GetError());
+		return -1;
+	}
+
+	win = SDL_CreateWindow("softRenderer", Wwidth, Wheight, 0);
+	if (win == NULL) {
+		SDL_Log("%s", SDL_GetError());
+		return -1;
+	}
+
+	surf = SDL_GetWindowSurface(win);
+	if (!surf) {
+		SDL_Log("%s", SDL_GetError());
+		return -1;
+	}
+	surf->format = SDL_PIXELFORMAT_ARGB8888;
+
+	/*camera.pos = Eigen::Vector4d(0, 0, 0, 1);
+	camera.upwards = Eigen::Vector4d(0, 1, 0, 0);
+	camera.lookat = Eigen::Vector4d(0, 0, -1, 0);
+	camera.right = Eigen::Vector4d(0, 0, 0, 0);
+	camera.right.block<3, 1>(0, 0) =
+	    camera.lookat.head<3>().cross(camera.upwards.head<3>());
+	*/
+	/*camera.pos = Eigen::Vector4d(200, 100, 0, 1);
+	camera.upwards = Eigen::Vector4d(0, 1, 0, 0);
+	camera.lookat = Eigen::Vector4d(0, 0, 1, 0);
+	camera.right = Eigen::Vector4d(0, 0, 0, 0);
+	camera.right.block<3, 1>(0, 0) =
+	camera.lookat.head<3>().cross(camera.upwards.head<3>());*/
+	camera.pos = Eigen::Vector4d(0, 6, 8, 1);
+	Eigen::Vector4d oriP(0, 0, 0, 1);
+	camera.lookat = (oriP - camera.pos).normalized();
+	camera.right = Eigen::Vector4d(1, 0, 0, 0);
+	camera.upwards =
+	    fundm::vecRotate(camera.lookat, camera.right, angle_to_rad(90));
+
+	pers.setFrustum(-0.1, -200, angle_to_rad(80), 4.0 / 3);
+
+	orth.orthSet(pers.get_n(), pers.get_f(), pers.get_w(), pers.get_h());
+	// orth.orthSet(-1000,1000,800,600);
+	viewTUpdate();
+	fundm::updateTransMat();
+
+	return 1;
+}
+
+void Event() {
+	while (true) {
+		if (SDL_PollEvent(&event)) {
+			if (event.type == SDL_EVENT_QUIT)
+				break;
+			switch (event.type) {
+			case SDL_EVENT_KEY_DOWN:
+				// SDL_Log("%d", event.key.key);
+				if (event.key.key == SDLK_W)
+					camera.pos += camera.lookat * camSpeed;
+				if (event.key.key == SDLK_S)
+					camera.pos -= camera.lookat * camSpeed;
+				if (event.key.key == SDLK_A)
+					camera.pos -= camera.right * camSpeed;
+				if (event.key.key == SDLK_D)
+					camera.pos += camera.right * camSpeed;
+				if (event.key.key == SDLK_SPACE)
+					camera.pos += camera.upwards * camSpeed;
+				if (event.key.key == SDLK_LSHIFT)
+					camera.pos -= camera.upwards * camSpeed;
+				if (event.key.key == SDLK_1)
+					b1.setShading(
+					    render_func::geometryR::shading_mode::FLAT_SHADING);
+				if (event.key.key == SDLK_2)
+					b1.setShading(
+					    render_func::geometryR::shading_mode::GOURAUD_SHADING);
+				if (event.key.key == SDLK_3)
+					b1.setShading(
+					    render_func::geometryR::shading_mode::PHONG_SHADING);
+				if (event.key.key == SDLK_LEFT)
+					b1.move(Eigen::Vector4d(-boxspeed, 0, 0, 0));
+				if (event.key.key == SDLK_RIGHT)
+					b1.move(Eigen::Vector4d(boxspeed, 0, 0, 0));
+				if (event.key.key == SDLK_UP)
+					b1.move(Eigen::Vector4d(0, 0, -boxspeed, 0));
+				if (event.key.key == SDLK_DOWN)
+					b1.move(Eigen::Vector4d(0, 0, boxspeed, 0));
+				break;
+			default:
+				break;
+			}
+		}
+		viewTUpdate();
+		Clear();
+
+		/*a = t*a;b=t*b;c=t*c;
+		a = mz*a;
+		b= mz*b;
+		c= mz*c;
+		a=ti*a;b=ti*b;c=ti*c;
+
+		draw_line(a.head(2),b.head(2),0xffffffff);
+		draw_line(b.head(2),c.head(2),0xffffffff);
+		draw_line(c.head(2),a.head(2),0xffffffff);*/
+
+		// g1.transform(rotateMat);
+
+		g1.renderGeo();
+		b1.render();
+		fundm::updateTransMat();
+		// draw();
+		show();
+		SDL_Delay(1000 / 24.0);
+	}
+}
+
+void show() {
+	memcpy(surf->pixels, frameBuffer.data(),
+	       frameBuffer.size() * sizeof(Uint32));
+	SDL_UpdateWindowSurface(win);
+}
+
+void quit() {
+	SDL_DestroySurface(surf);
+	SDL_DestroyWindow(win);
+	SDL_Quit();
+}
+
+void Clear() {
+	std::fill(frameBuffer.begin(), frameBuffer.end(), 0);
+	std::fill(zBuffer.begin(), zBuffer.end(), -1);
+}
+
+void draw() {
+
+	for (size_t i = 0; i < lineSet.size(); i++) {
+		draw_line(orth.orthProj(pers.persProj(viewTrans(lineSet[i]))));
+		/*std::cout << "0:" << lineSet[i].p[0][0] <<std::endl;
+		std::cout << "1:" << viewTrans(lineSet[i]).p[0][0] <<std::endl;
+		std::cout << "2:" << pers.persProj(viewTrans(lineSet[i])).p[0][0]
+		<<std::endl; std::cout << "3:" <<
+		orth.orthProj(pers.persProj(viewTrans(lineSet[i]))).p[0][2]
+		<<std::endl;*/
+	}
+
+	for (size_t i = 0; i < triSet.size(); i++) {
+		draw_triangle(transTriangle(triSet[i]));
+	}
+}
+
+void viewTUpdate() {
+	viewMat << 1, 0, 0, -camera.pos[0], 0, 1, 0, -camera.pos[1], 0, 0, 1,
+	    -camera.pos[2], 0, 0, 0, 1;
+	Eigen::Matrix4d Rview;
+	// 自计算right方向
+	camera.right.block<3, 1>(0, 0) =
+	    camera.lookat.head<3>().cross(camera.upwards.head<3>());
+
+	Rview << camera.right[0], camera.right[1], camera.right[2], 0,
+	    camera.upwards[0], camera.upwards[1], camera.upwards[2], 0,
+	    -camera.lookat[0], -camera.lookat[1], -camera.lookat[2], 0, 0, 0, 0, 1;
+	viewMat = Rview * viewMat;
+}

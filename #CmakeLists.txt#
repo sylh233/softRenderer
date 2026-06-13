@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 4.1)
+
+project(softRenderer)
+
+set(HOME /home)
+set(EXECUTABLE_OUTPUT_PATH ${HOME}/bin)
+set(THIRD_PARTY /thirdParty)
+file(GLOB SRC_LIST /src/*.cpp)
+
+include_directories(${THIRD_PARTY}/include)
+
+link_directories(${THIRD_PARTY}/lib)
+
+add_executable(sRenderer ${SRC_LIST})
+
+target_link_libraries(SDL3)
