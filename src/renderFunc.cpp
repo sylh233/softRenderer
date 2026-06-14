@@ -4,6 +4,7 @@
 #include <iostream>
 #include <renderDataStruct.h>
 #include <renderFunction.h>
+#include <utility>
 
 namespace render_func {
 
@@ -14,23 +15,31 @@ void textureSet::appendTex(std::string address, std::string texName,
 	SDL_Surface *ts = SDL_LoadBMP(address.c_str());
 	if (ts == NULL) {
 		SDL_Log("Load BMP error:%s", SDL_GetError());
+		return;
 	}
 	SDL_Surface *texsurf = SDL_ConvertSurface(ts, SDL_PIXELFORMAT_ARGB8888);
 	if (texsurf == NULL) {
-		SDL_Log("Load BMP error:%s", SDL_GetError());
+		SDL_Log("BMP格式转换错误:%s", SDL_GetError());
+		return;
 	}
 	SDL_DestroySurface(ts);
+	if (SDL_BYTESPERPIXEL(texsurf->format) != sizeof(uint32_t)) {
+		SDL_Log("图片格式转换失败");
+		SDL_DestroySurface(texsurf);
+		return;
+	}
 	texr.w = texsurf->w;
 	texr.h = texsurf->h;
-	uint32_t *src = (uint32_t *)texsurf->pixels;
+	uint8_t *src = (uint8_t *)texsurf->pixels;
 	std::vector<uint32_t> vec;
 	vec.resize(texr.w * texr.h);
-	int pitch = texsurf->pitch / sizeof(uint32_t); // 每行字节数
-	for (size_t y = 0; y < texr.h; y++) {          // 跳过无用内存
-		memcpy(&vec[y * texr.w], &src[y * pitch], texr.w * sizeof(uint32_t));
+	int pitch = texsurf->pitch;           // 每行字节数
+	for (size_t y = 0; y < texr.h; y++) { // 跳过无用内存
+		std::memcpy(&vec[y * texr.w], &src[y * pitch],
+		            texr.w * sizeof(uint32_t));
 	}
 	texr.texs.push_back(std::move(vec)); // 移动语义
-	texm[texName] = texr;
+	texm[texName] = std::move(texr);
 
 	SDL_DestroySurface(texsurf);
 }
@@ -184,7 +193,9 @@ void geometryR::renderGeo() {
 						// 颜色插值
 						uint32_t tColor;
 						uint32_t shadingColor;
-						if (TRI.texture == nullptr) { // 纹理映射
+						if (tsMap.count(TRI.tmName) == 0 ||
+						    (tsMap[TRI.tmName]->get_textures(TRI.texName) ==
+						     nullptr)) { // 纹理映射
 							tColor = colorInter(baryCoor, colors);
 						} else {
 							tColor = get_uvmapColor(baryCoor, i);
@@ -522,10 +533,11 @@ uint32_t geometryR::get_uvmapColor(std::array<double, 3> baryCoor,
 	    dot_array<Eigen::Vector2d, double, Eigen::Vector2d, 3>(
 	        tris[index].uvMap, baryCoor);
 	Eigen::Vector2i uv = uvd.cast<int>();
-	std::vector<uint32_t> tex0 = (tris[index].texture)->texs[0];
-	int w = (tris[index].texture)->w, h = (tris[index].texture)->h;
+	texR *tPtr = tsMap[tris[index].tmName]->get_textures(tris[index].texName);
+	int w = (tPtr)->w, h = (tPtr)->h;
+	std::vector<uint32_t> *tex0 = &(tPtr->texs[0]);
 	if (rangeTest(uv[0], uv[1], w, h)) {
-		return tex0[(w - 1 - uv[1]) * w + uv[0]];
+		return (*tex0)[(w - 1 - uv[1]) * w + uv[0]];
 	} else {
 		return 0x00000000;
 	}
@@ -710,5 +722,7 @@ void boxR::changeScale(double s) {
 	scale = s;
 	update();
 }
+
+void geometryR::appendTexMap(textureSet *ts, std::string n) { tsMap[n] = ts; }
 
 } // namespace render_func

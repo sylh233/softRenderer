@@ -494,4 +494,6 @@ CMakeFiles/sRenderer.dir/src/renderFunc.cpp.obj: \
  C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_tree.h \
  C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_map.h \
  C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_multimap.h \
- D:/Emacs/home/works/softRenderer/inc/renderFunction.h
+ D:/Emacs/home/works/softRenderer/inc/renderFunction.h \
+ C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/utility \
+ C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_relops.h

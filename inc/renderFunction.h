@@ -55,6 +55,7 @@ class geometryR {
 	};
 
   private:
+	std::map<std::string, textureSet *> tsMap;
 	triRSet tris;
 	pointRSet ps;
 	LightSet lights;
@@ -95,6 +96,7 @@ class geometryR {
 	triRSet *get_tris() { return &tris; };
 	void appendLight(Light l);
 	void deleteLight(size_t i);
+	void appendTexMap(textureSet *ts, std::string tmName);
 	void setShadingM(shading_mode sm);
 };
 

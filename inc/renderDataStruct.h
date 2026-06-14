@@ -32,7 +32,8 @@ struct triangleR {
 	std::array<Eigen::Vector4d, 3> points;
 	std::array<uint32_t, 3> colors;
 	std::array<Eigen::Vector2d, 3> uvMap;
-	texR *texture = nullptr;
+	std::string tmName = "";
+	std::string texName = "";
 	std::array<double, 3> k_a = {0.3, 0.3, 0.3}; // 环境光着色率
 	std::array<double, 3> k_d = {0.7, 0.7, 0.7}; // 漫反射..，颜色由colors提供
 	std::array<double, 3> k_s = {1, 1, 1};       // 镜面反射..，颜色由光源提供

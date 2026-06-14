@@ -1041,6 +1041,7 @@ CMakeFiles/sRenderer.dir/src/renderFunc.cpp.obj: D:/Emacs/home/works/softRendere
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_multimap.h \
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_pair.h \
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_raw_storage_iter.h \
+  C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_relops.h \
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_tempbuf.h \
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_tree.h \
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_uninitialized.h \
@@ -1120,6 +1121,7 @@ CMakeFiles/sRenderer.dir/src/renderFunc.cpp.obj: D:/Emacs/home/works/softRendere
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/type_traits \
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/typeinfo \
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/unordered_map \
+  C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/utility \
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/vector \
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/x86_64-w64-mingw32/bits/atomic_word.h \
   C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/x86_64-w64-mingw32/bits/c++allocator.h \
@@ -2426,3 +2428,7 @@ C:/tools/mingw64/x86_64-w64-mingw32/include/_timeval.h:
 C:/tools/mingw64/x86_64-w64-mingw32/include/time.h:
 
 D:/Emacs/home/works/softRenderer/inc/renderDataStruct.h:
+
+C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/bits/stl_relops.h:
+
+C:/tools/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/c++/utility:

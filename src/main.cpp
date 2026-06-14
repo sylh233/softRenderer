@@ -114,6 +114,8 @@ int main() {
 	              Vector4d(-1, -1, -10, 1)};
 	tr1.colors = {0xff0000, 0x00ff00, 0x0000ff};
 	tx1.appendTex("home/textures/sky.bmp", "sky");
+	tx1.appendTex("home/textures/playground.bmp", "pg");
+
 	tr1.uvMap = {Vector2d(0, 0), Vector2d(255, 0), Vector2d(255, 127)};
 	tr1.k_a = {0.1, 0.1, 0.1};
 	tr1.k_d = {1, 1, 1};
@@ -122,14 +124,18 @@ int main() {
 	tr2.points = {Vector4d(-10, -1, -10, 1), Vector4d(10, -1, -10, 1),
 	              Vector4d(0, 13, -10, 1)};
 	tr2.colors = {0xa5ffa5, 0xa5a5ff, 0xffa5a5};
+	tr2.I_a = {0x00ff00, 0x00ff00, 0x00ff00};
 	tr2.single_face = true;
-	tr2.k_a = {1, 1, 1};
+	tr2.k_a = {0.3, 0.3, 0.3};
 	tr2.k_d = {1, 1, 1};
 	tr2.k_s = {1, 1, 1};
-	tx1.appendTex("home/textures/playground.bmp", "pg");
-	tr2.uvMap = {Vector2d(0, 0), Vector2d(255, 0), Vector2d(255, 128)};
-	// tr1.texture = tx1.get_textures("pg");
-	// tr2.texture = tx1.get_textures("sky");
+	tr2.uvMap = {Vector2d(0, 0), Vector2d(255, 0), Vector2d(255, 127)};
+	g1.appendTexMap(&tx1, "texset1");
+	g2.appendTexMap(&tx1, "texset1");
+	tr1.tmName = "texset1";
+	tr1.texName = "pg";
+	tr2.tmName = "texset1";
+	tr2.texName = "sky";
 
 	g1.appendTri(tr1);
 	g2.appendTri(tr2);
