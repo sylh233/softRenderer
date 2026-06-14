@@ -126,7 +126,7 @@ int main() {
 	tr2.colors = {0xa5ffa5, 0xa5a5ff, 0xffa5a5};
 	tr2.I_a = {0x00ff00, 0x00ff00, 0x00ff00};
 	tr2.single_face = true;
-	tr2.k_a = {0.3, 0.3, 0.3};
+	tr2.k_a = {0.1, 0.1, 0.1};
 	tr2.k_d = {1, 1, 1};
 	tr2.k_s = {1, 1, 1};
 	tr2.uvMap = {Vector2d(0, 0), Vector2d(255, 0), Vector2d(255, 127)};

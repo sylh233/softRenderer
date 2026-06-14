@@ -539,11 +539,11 @@ uint32_t geometryR::get_uvmapColor(std::array<double, 3> baryCoor,
 	texR *tPtr = tsMap[tris[index].tmName]->get_textures(tris[index].texName);
 	int w = (tPtr)->w, h = (tPtr)->h;
 	std::vector<uint32_t> *tex0 = &(tPtr->texs[0]);
-	if (rangeTest(uv[0], uv[1], w, h)) {
-		return (*tex0)[(w - 1 - uv[1]) * w + uv[0]];
-	} else {
+
+	if ((h - 1 - uv[1]) * w + uv[0] < tex0->size()) {
+		return (*tex0)[(h - 1 - uv[1]) * w + uv[0]]; // 不要把第一个h写成w哦
+	} else
 		return 0x00000000;
-	}
 }
 
 void geometryR::appendLight(Light l) { lights.push_back(l); }
