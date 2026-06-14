@@ -219,6 +219,9 @@ void geometryR::renderGeo() {
 							std::vector<double> Ds;
 
 							switch (shadingM) {
+							case shading_mode::OFF:
+								shadingColor = tColor;
+								break;
 							case shading_mode::FLAT_SHADING:
 								for (size_t lf = 0; lf < lights.size(); lf++) {
 									shadingColor = colorPlus(
