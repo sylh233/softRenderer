@@ -1,3 +1,0 @@
-D:/Emacs/home/works/softRenderer/build/CMakeFiles/sRenderer.dir
-D:/Emacs/home/works/softRenderer/build/CMakeFiles/edit_cache.dir
-D:/Emacs/home/works/softRenderer/build/CMakeFiles/rebuild_cache.dir
