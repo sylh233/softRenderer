@@ -2,4 +2,5 @@
 build/
 CMakeFiles/
 CMakeCache.txt
+SDL/
 *#
