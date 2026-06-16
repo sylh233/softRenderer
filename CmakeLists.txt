@@ -15,4 +15,11 @@ link_directories(${THIRD_PARTY}/lib)
 
 add_executable(sRenderer ${SRC_LIST})
 
+target_link_options(sRenderer PRIVATE
+			      -static-libstdc++
+			      -static-libgcc
+			      -pthread
+			      -Wl,--as-needed
+			      )
+
 target_link_libraries(sRenderer SDL3)
