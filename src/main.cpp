@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_filesystem.h>
 #include <array>
 #include <cmath>
 #include <cstring>
@@ -113,8 +114,12 @@ int main() {
 	tr1.points = {Vector4d(-5, -1, 6, 1), Vector4d(6, -1, 6, 1),
 	              Vector4d(-1, -1, -10, 1)};
 	tr1.colors = {0xff0000, 0x00ff00, 0x0000ff};
-	tx1.appendTex("home/textures/sky.bmp", "sky");
-	tx1.appendTex("home/textures/playground.bmp", "pg");
+
+	std::string path = SDL_GetBasePath();
+	path = path.substr(0,path.size()-4);
+	
+	tx1.appendTex(path + "/textures/sky.bmp", "sky");
+	tx1.appendTex(path + "textures/playground.bmp", "pg");
 
 	tr1.uvMap = {Vector2d(0, 0), Vector2d(255, 0), Vector2d(255, 127)};
 	tr1.k_a = {0.1, 0.1, 0.1};
